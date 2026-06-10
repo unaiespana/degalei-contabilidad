@@ -437,7 +437,7 @@
 <script>
 // ─── CONFIG ───────────────────────────────────────────────
 const SUPABASE_URL = 'https://gmllxnakjiuslbicabvc.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Hui0kiz9BuS5GfpgC3GzYw_pQtFI3zU';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtbGx4bmFraml1c2xiaWNhYnZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMDQ4OTEsImV4cCI6MjA5NjY4MDg5MX0.2yoKpCPOFgoeJ1usmJwQzsMDz8cH51TuvwDA8c2AiVw';
 
 const SHOPIFY_ORDERS = [
   {id:'13042985894213',num:'#1007',cliente:'Ana Carbonell Velasco',prod:'Cojín Ceniza · Gris-Marrón',fecha:'2026-06-08',total:58.15},
@@ -904,14 +904,18 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 // ─── INIT ─────────────────────────────────────────────────
 async function init() {
-  const d = new Date();
-  document.getElementById('topbar-date').textContent = d.toLocaleDateString('es-ES', {weekday:'short', day:'numeric', month:'long'});
-  const vence = new Date('2026-07-20');
-  const dias = Math.ceil((vence - d) / (1000*60*60*24));
-  document.getElementById('deadline-badge').textContent = '⚠ ' + dias + ' días';
-  const data = await sb.get('gastos');
-  if (Array.isArray(data)) gastos = data;
+  try {
+    const d = new Date();
+    document.getElementById('topbar-date').textContent = d.toLocaleDateString('es-ES', {weekday:'short', day:'numeric', month:'long'});
+    const vence = new Date('2026-07-20');
+    const dias = Math.ceil((vence - d) / (1000*60*60*24));
+    document.getElementById('deadline-badge').textContent = String.fromCharCode(9888) + ' ' + dias + ' días';
+  } catch(e) {}
   renderAll();
+  try {
+    const data = await sb.get('gastos');
+    if (Array.isArray(data) && data.length > 0) { gastos = data; renderAll(); }
+  } catch(e) { console.warn('Supabase:', e); }
 }
 
 init();
