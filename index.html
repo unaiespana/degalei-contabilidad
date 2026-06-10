@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>De Galei · Contabilidad</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23C4A882'/><text x='16' y='22' text-anchor='middle' font-family='Georgia,serif' font-size='14' font-weight='bold' fill='white'>DG</text></svg>">
+<style>
+  :root {
+    --cream: #FAF7F2;
+    --sand: #E8DDD0;
+    --accent: #C4A882;
+    --accent-dark: #A8886A;
+    --dark: #1A1A1A;
+    --mid: #666;
+    --light: #999;
+    --border: #E5E0D8;
+    --white: #FFFFFF;
+    --success: #2D6A4F;
+    --success-bg: #EAF4EE;
+    --warning: #92400E;
+    --warning-bg: #FEF3C7;
+    --danger: #991B1B;
+    --danger-bg: #FEE2E2;
+    --info: #1D4ED8;
+    --info-bg: #EFF6FF;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--cream); color: var(--dark); min-height: 100vh; }
+
+  /* TOPBAR */
+  .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 1.25rem; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; }
+  .topbar-logo { width: 32px; height: 32px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700; font-family: Georgia, serif; flex-shrink: 0; }
+  .topbar-name { font-size: 15px; font-weight: 600; color: var(--dark); }
+  .topbar-sub { font-size: 11px; color: var(--light); }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .sync-btn { background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 12px; font-size: 12px; font-weight: 500; color: var(--mid); cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.15s; }
+  .sync-btn:hover { background: var(--sand); }
+  .sync-btn.syncing { opacity: 0.6; pointer-events: none; }
+  .deadline-badge { background: var(--warning-bg); color: var(--warning); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+
+  /* NAV */
+  .nav { background: var(--white); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn { flex: 1; min-width: 70px; padding: 12px 8px 10px; border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: var(--light); border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+  .nav-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.75; }
+  .nav-btn.active { color: var(--accent-dark); border-bottom-color: var(--accent); }
+  .nav-btn:hover:not(.active) { color: var(--mid); }
+
+  /* MAIN */
+  .main { max-width: 680px; margin: 0 auto; padding: 1rem; }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.125rem; margin-bottom: 0.75rem; box-shadow: var(--shadow); }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.875rem; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--dark); }
+
+  /* KPIS */
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  .kpi { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.875rem 1rem; box-shadow: var(--shadow); }
+  .kpi-label { font-size: 11px; color: var(--light); margin-bottom: 5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .kpi-value { font-size: 22px; font-weight: 700; color: var(--dark); letter-spacing: -0.02em; }
+  .kpi-sub { font-size: 11px; color: var(--light); margin-top: 3px; }
+  .kpi-green .kpi-value { color: var(--success); }
+  .kpi-amber .kpi-value { color: var(--warning); }
+  .kpi-red .kpi-value { color: var(--danger); }
+
+  /* TAGS */
+  .tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; display: inline-block; }
+  .tag-green { background: var(--success-bg); color: var(--success); }
+  .tag-amber { background: var(--warning-bg); color: var(--warning); }
+  .tag-red { background: var(--danger-bg); color: var(--danger); }
+  .tag-blue { background: var(--info-bg); color: var(--info); }
+  .tag-gray { background: var(--cream); color: var(--mid); border: 1px solid var(--border); }
+
+  /* ALERT */
+  .alert { background: var(--warning-bg); border: 1px solid #FDE68A; border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 0.875rem; display: flex; gap: 10px; }
+  .alert svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; stroke: var(--warning); fill: none; stroke-width: 2; }
+  .alert-text { font-size: 13px; color: var(--warning); line-height: 1.55; }
+  .alert-title { font-weight: 600; display: block; margin-bottom: 2px; }
+
+  /* ROWS */
+  .row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .row:last-child { border-bottom: none; }
+  .row-num { font-size: 12px; font-weight: 600; color: var(--light); width: 40px; flex-shrink: 0; }
+  .row-info { flex: 1; min-width: 0; }
+  .row-name { font-size: 13px; font-weight: 600; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-sub { font-size: 11px; color: var(--light); margin-top: 1px; }
+  .row-right { flex-shrink: 0; text-align: right; }
+  .row-amount { font-size: 13px; font-weight: 700; color: var(--dark); }
+  .row-det { font-size: 11px; color: var(--light); margin-top: 2px; }
+
+  /* CALC BOX */
+  .calc-box { background: var(--cream); border-radius: var(--radius-sm); padding: 0.875rem; margin-bottom: 0.75rem; }
+  .calc-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: var(--mid); }
+  .calc-row span:last-child { font-weight: 600; color: var(--dark); }
+  .calc-row.indent { padding-left: 12px; font-size: 11px; }
+  .calc-divider { border-top: 1px solid var(--border); margin: 6px 0; }
+  .calc-total { display: flex; justify-content: space-between; padding: 7px 0 2px; font-size: 15px; font-weight: 700; }
+
+  /* GASTOS CATEGORIAS */
+  .cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+  .cat-btn { padding: 12px 6px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--white); cursor: pointer; text-align: center; transition: all 0.15s; box-shadow: var(--shadow); }
+  .cat-btn:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(196,168,130,0.15); }
+  .cat-btn svg { width: 22px; height: 22px; stroke: var(--light); fill: none; stroke-width: 1.75; display: block; margin: 0 auto 5px; }
+  .cat-btn:hover svg { stroke: var(--accent); }
+  .cat-btn span { font-size: 11px; color: var(--mid); display: block; line-height: 1.3; }
+
+  /* GASTO ITEM */
+  .gasto-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .gasto-item:last-child { border-bottom: none; }
+  .gasto-icon { width: 34px; height: 34px; border-radius: var(--radius-sm); background: var(--cream); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .gasto-icon svg { width: 16px; height: 16px; stroke: var(--accent); fill: none; stroke-width: 2; }
+  .gasto-info { flex: 1; min-width: 0; }
+  .gasto-nombre { font-size: 13px; font-weight: 600; color: var(--dark); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .gasto-det { font-size: 11px; color: var(--light); margin-top: 1px; }
+  .gasto-right { text-align: right; flex-shrink: 0; }
+  .gasto-total { font-size: 13px; font-weight: 700; color: var(--dark); }
+  .gasto-iva { font-size: 11px; color: var(--light); }
+  .isp-badge { font-size: 10px; font-weight: 600; background: var(--warning-bg); color: var(--warning); padding: 1px 6px; border-radius: 10px; }
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--light); padding: 5px; border-radius: 4px; flex-shrink: 0; transition: color 0.15s; }
+  .del-btn:hover { color: var(--danger); }
+  .del-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* UPLOAD ZONE */
+  .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 1.5rem; text-align: center; cursor: pointer; background: var(--white); margin-bottom: 0.75rem; transition: all 0.15s; }
+  .upload-zone:hover { border-color: var(--accent); background: var(--cream); }
+  .upload-zone svg { width: 28px; height: 28px; stroke: var(--light); fill: none; stroke-width: 1.5; margin: 0 auto 8px; display: block; }
+  .upload-title { font-size: 14px; font-weight: 600; color: var(--dark); }
+  .upload-sub { font-size: 12px; color: var(--light); margin-top: 3px; }
+  input[type=file] { display: none; }
+
+  /* FISCAL CARDS */
+  .fiscal-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.125rem; margin-bottom: 0.625rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.15s; box-shadow: var(--shadow); }
+  .fiscal-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(196,168,130,0.12); }
+  .fiscal-left { display: flex; align-items: center; gap: 12px; }
+  .fi { width: 38px; height: 38px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .fi svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .fi-red { background: var(--danger-bg); color: var(--danger); }
+  .fi-blue { background: var(--info-bg); color: var(--info); }
+  .fi-amber { background: var(--warning-bg); color: var(--warning); }
+  .fi-gray { background: var(--cream); color: var(--light); }
+  .fi-green { background: var(--success-bg); color: var(--success); }
+  .fiscal-name { font-size: 14px; font-weight: 600; color: var(--dark); }
+  .fiscal-desc { font-size: 12px; color: var(--light); margin-top: 2px; }
+  .fiscal-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+  .fiscal-deadline { font-size: 11px; color: var(--light); }
+
+  /* STOCK */
+  .inv-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .inv-row:last-child { border-bottom: none; }
+  .inv-name { font-size: 13px; font-weight: 600; color: var(--dark); }
+  .inv-sku { font-size: 11px; color: var(--light); }
+  .inv-right { display: flex; align-items: center; gap: 10px; }
+  .inv-price { font-size: 12px; color: var(--mid); }
+  .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--light); margin: 1rem 0 0.5rem; }
+
+  /* BTNS */
+  .btn { padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--white); color: var(--dark); transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:hover { background: var(--cream); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .btn-row { display: flex; gap: 8px; margin-top: 0.875rem; flex-wrap: wrap; }
+  .btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: flex-end; justify-content: center; padding: 0; }
+  @media (min-width: 600px) { .modal-overlay { align-items: center; padding: 1rem; } }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--white); border-radius: var(--radius) var(--radius) 0 0; padding: 1.25rem; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; box-shadow: 0 -4px 24px rgba(0,0,0,0.12); }
+  @media (min-width: 600px) { .modal { border-radius: var(--radius); box-shadow: 0 8px 32px rgba(0,0,0,0.16); } }
+  .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 1rem; display: block; }
+  @media (min-width: 600px) { .modal-handle { display: none; } }
+  .modal-title { font-size: 16px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+  .modal-sub { font-size: 13px; color: var(--mid); margin-bottom: 1rem; line-height: 1.5; }
+  .modal-row { margin-bottom: 0.75rem; }
+  .modal-label { font-size: 12px; font-weight: 600; color: var(--mid); margin-bottom: 5px; display: block; }
+  .modal input, .modal select, .modal textarea { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 14px; background: var(--white); color: var(--dark); font-family: inherit; outline: none; transition: border-color 0.15s; }
+  .modal input:focus, .modal select:focus, .modal textarea:focus { border-color: var(--accent); }
+  .modal textarea { resize: vertical; min-height: 52px; }
+  .modal-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .isp-note { background: var(--warning-bg); border: 1px solid #FDE68A; border-radius: var(--radius-sm); padding: 0.625rem 0.75rem; font-size: 12px; color: var(--warning); margin-top: 0.5rem; display: none; line-height: 1.5; }
+  .isp-note.show { display: block; }
+  .prev-box { background: var(--cream); border-radius: var(--radius-sm); padding: 0.625rem 0.75rem; font-size: 13px; margin-top: 0.5rem; display: none; }
+  .prev-box.show { display: block; }
+  .prev-row { display: flex; justify-content: space-between; padding: 2px 0; }
+  .prev-label { color: var(--mid); }
+  .prev-val { font-weight: 600; color: var(--dark); }
+  .prev-val.green { color: var(--success); }
+
+  /* MODAL FISCAL */
+  .step-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; font-size: 13px; color: var(--dark); line-height: 1.5; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--info-bg); color: var(--info); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 2rem; color: var(--light); font-size: 13px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; margin-bottom: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { text-align: center; padding: 2rem 1rem; color: var(--light); font-size: 13px; }
+  .empty svg { width: 32px; height: 32px; stroke: var(--border); fill: none; stroke-width: 1.5; margin: 0 auto 8px; display: block; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--dark); color: white; padding: 10px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 500; z-index: 300; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* INFO BOX */
+  .info-box { background: var(--info-bg); border: 1px solid #BFDBFE; border-radius: var(--radius-sm); padding: 0.625rem 0.875rem; font-size: 12px; color: var(--info); margin-bottom: 0.75rem; line-height: 1.55; }
+
+  /* FOOTER TOTALS */
+  .totals-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+  .totals-row .label { color: var(--mid); }
+  .totals-row .val { font-weight: 700; color: var(--dark); }
+  .totals-row .val-green { color: var(--success); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">DG</div>
+    <div>
+      <div class="topbar-name">De Galei · Contabilidad</div>
+      <div class="topbar-sub" id="topbar-date"></div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="deadline-badge" id="deadline-badge">⚠ 40 días</span>
+    <button class="sync-btn" id="sync-btn" onclick="sincronizarShopify()">
+      <svg viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+      Sincronizar
+    </button>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="go('dashboard',this)">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Inicio
+  </button>
+  <button class="nav-btn" onclick="go('ingresos',this)">
+    <svg viewBox="0 0 24 24"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    Ingresos
+  </button>
+  <button class="nav-btn" onclick="go('gastos',this)">
+    <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 11h.01M12 11h.01M8 11h.01"/></svg>
+    Gastos
+  </button>
+  <button class="nav-btn" onclick="go('hacienda',this)">
+    <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M3 7l9-4 9 4M4 10v11M20 10v11M8 10v11M16 10v11M12 10v11"/></svg>
+    Hacienda
+  </button>
+  <button class="nav-btn" onclick="go('stock',this)">
+    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+    Stock
+  </button>
+</nav>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="alert">
+    <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div class="alert-text">
+      <span class="alert-title">Modelos 303, 130 y 349 — vencen el 20 de julio 2026</span>
+      Añade todas tus facturas en "Gastos" para que los cálculos sean exactos antes de presentar.
+    </div>
+  </div>
+  <div class="kpi-grid" id="kpis"></div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Últimos pedidos</span>
+      <span class="tag tag-green" id="pedidos-badge"></span>
+    </div>
+    <div id="orders-dash"></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Resumen trimestre 2T 2026</span></div>
+    <div class="calc-box" id="resumen-box" style="margin-bottom:0"></div>
+  </div>
+</div>
+
+<!-- INGRESOS -->
+<div class="page" id="page-ingresos">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Pedidos Shopify</span>
+      <button class="btn btn-sm" onclick="sincronizarShopify()">
+        <svg viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+        Actualizar
+      </button>
+    </div>
+    <div id="orders-full"></div>
+    <div id="ing-footer" style="padding-top:0.75rem;border-top:1px solid var(--border);margin-top:0.25rem"></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Comisiones Shopify por pedido</span><span class="tag tag-amber">Gasto deducible</span></div>
+    <div class="info-box">Plan Basic: <strong>2,1% + 0,30€</strong> por pedido procesado con Shopify Payments (verificado en shopify.com). Es gasto deducible, declarar en Modelo 349 (Irlanda).</div>
+    <div class="calc-box" id="comisiones-box" style="margin-bottom:0.75rem"></div>
+    <button class="btn btn-sm btn-primary" onclick="anadirComisionAuto()">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Añadir como gasto
+    </button>
+  </div>
+</div>
+
+<!-- GASTOS -->
+<div class="page" id="page-gastos">
+  <div class="upload-zone" onclick="document.getElementById('file-scan').click()">
+    <svg viewBox="0 0 24 24"><path d="M23 7l-7-5-7 5"/><path d="M23 7v13a1 1 0 01-1 1H2a1 1 0 01-1-1V7"/><path d="M9 21V12h6v9"/></svg>
+    <div class="upload-title">Escanear factura con IA</div>
+    <div class="upload-sub">Foto o PDF → extrae proveedor, base, IVA y total solo</div>
+    <input type="file" id="file-scan" accept="image/*,application/pdf" onchange="escanear(this)">
+  </div>
+  <div id="ai-result"></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Añadir gasto por categoría</span></div>
+    <div class="cat-grid" id="cat-grid"></div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Gastos registrados</span>
+      <span style="font-size:12px;color:var(--light)" id="gastos-count"></span>
+    </div>
+    <div id="gastos-list"></div>
+    <div id="gastos-footer" style="padding-top:0.75rem;border-top:1px solid var(--border);margin-top:0.25rem"></div>
+  </div>
+</div>
+
+<!-- HACIENDA -->
+<div class="page" id="page-hacienda">
+  <div class="info-box">💡 Añade todas tus facturas en Gastos antes de presentar. Los números se actualizan solos cada vez que guardas un gasto.</div>
+  <div class="section-title">Urgente — vence 20 julio 2026</div>
+  <div class="fiscal-card" onclick="openFiscal('303')">
+    <div class="fiscal-left"><div class="fi fi-red"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></div>
+    <div><div class="fiscal-name">Modelo 303 — IVA trimestral</div><div class="fiscal-desc">IVA cobrado − IVA pagado en gastos</div></div></div>
+    <div class="fiscal-right"><span class="fiscal-deadline">20 jul 2026</span><span id="m303-v" style="font-size:14px;font-weight:700"></span><span class="tag" id="m303-t"></span></div>
+  </div>
+  <div class="fiscal-card" onclick="openFiscal('130')">
+    <div class="fiscal-left"><div class="fi fi-blue"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+    <div><div class="fiscal-name">Modelo 130 — IRPF trimestral</div><div class="fiscal-desc">20% del beneficio → anticipo de la Renta</div></div></div>
+    <div class="fiscal-right"><span class="fiscal-deadline">20 jul 2026</span><span id="m130-v" style="font-size:14px;font-weight:700"></span><span class="tag" id="m130-t"></span></div>
+  </div>
+  <div class="fiscal-card" onclick="openFiscal('349')">
+    <div class="fiscal-left"><div class="fi fi-amber"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+    <div><div class="fiscal-name">Modelo 349 — Operaciones UE</div><div class="fiscal-desc">Shopify Irlanda + Meta Ads · Obligatorio · Confirmado AEAT</div></div></div>
+    <div class="fiscal-right"><span class="fiscal-deadline">20 jul 2026</span><span id="m349-v" style="font-size:14px;font-weight:700;color:var(--warning)"></span><span class="tag tag-amber">Presentar</span></div>
+  </div>
+  <div class="section-title" style="margin-top:1.25rem">No urgentes — este año</div>
+  <div class="fiscal-card"><div class="fiscal-left"><div class="fi fi-gray"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div><div class="fiscal-name">Modelo 390 — Resumen anual IVA</div><div class="fiscal-desc">Suma los 4 trimestres del año 2026</div></div></div><div class="fiscal-right"><span class="fiscal-deadline">1–30 enero 2027</span><span class="tag tag-gray">No urgente</span></div></div>
+  <div class="fiscal-card"><div class="fiscal-left"><div class="fi fi-gray"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div><div><div class="fiscal-name">Modelo 347 — Operaciones +3.005€</div><div class="fiscal-desc">Solo si superas esa cifra con un mismo proveedor en el año</div></div></div><div class="fiscal-right"><span class="fiscal-deadline">Febrero 2027</span><span class="tag tag-gray">No urgente</span></div></div>
+  <div class="fiscal-card"><div class="fiscal-left"><div class="fi fi-green"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div><div class="fiscal-name">Modelo 100 — Declaración de la Renta</div><div class="fiscal-desc">IRPF anual — resultado final del año</div></div></div><div class="fiscal-right"><span class="fiscal-deadline">Abr–Jun 2027</span><span class="tag tag-gray">No urgente</span></div></div>
+</div>
+
+<!-- STOCK -->
+<div class="page" id="page-stock">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Inventario real — Shopify</span>
+      <button class="btn btn-sm" onclick="sincronizarShopify()">
+        <svg viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+        Actualizar
+      </button>
+    </div>
+    <div class="section-title">Cojines — €52 / ud</div>
+    <div id="stock-cojines"></div>
+    <div class="section-title" style="margin-top:1rem">Neceseres — €12 / ud</div>
+    <div id="stock-neceseres"></div>
+  </div>
+  <div class="kpi-grid" id="stock-kpis"></div>
+</div>
+
+</div><!-- end main -->
+
+<!-- MODAL GASTO -->
+<div class="modal-overlay" id="modal-gasto">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mg-title">Añadir gasto</div>
+    <div class="modal-sub" id="mg-sub"></div>
+    <div class="modal-row"><label class="modal-label">Proveedor / empresa</label><input type="text" id="mg-prov" placeholder="Ej: Telas Martínez SL"></div>
+    <div class="modal-2col">
+      <div class="modal-row"><label class="modal-label">Fecha</label><input type="date" id="mg-fecha"></div>
+      <div class="modal-row"><label class="modal-label">Total con IVA (€)</label><input type="number" id="mg-total" placeholder="121.00" step="0.01" oninput="calcPrev()"></div>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Tipo de IVA</label>
+      <select id="mg-iva" onchange="onIvaChange()">
+        <option value="21">21% — normal (telas, etiquetas, envíos, packaging...)</option>
+        <option value="10">10% — reducido</option>
+        <option value="0">0% — sin IVA (cuota autónomo RETA)</option>
+        <option value="isp">Inversión sujeto pasivo (Shopify, Meta, servicios UE)</option>
+      </select>
+    </div>
+    <div class="isp-note" id="isp-note">⚠ La factura llega sin IVA pero tú lo autoliquideas. El programa lo calcula solo y lo mete en las casillas correctas del Modelo 303. No tienes que hacer nada más.</div>
+    <div class="prev-box" id="prev-box">
+      <div class="prev-row"><span class="prev-label">Base imponible</span><span class="prev-val" id="prev-base"></span></div>
+      <div class="prev-row"><span class="prev-label">IVA deducible</span><span class="prev-val green" id="prev-iva"></span></div>
+    </div>
+    <div class="modal-row"><label class="modal-label">Notas (opcional)</label><textarea id="mg-nota" placeholder="Nº factura, descripción..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-gasto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarGasto()">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Guardar gasto
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FISCAL -->
+<div class="modal-overlay" id="modal-fiscal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mf-title"></div>
+    <div class="modal-sub" id="mf-sub"></div>
+    <div id="mf-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-fiscal')">Cerrar</button>
+      <button class="btn btn-primary" id="mf-cta">Ir a la AEAT →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+const SUPABASE_URL = 'https://gmllxnakjiuslbicabvc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Hui0kiz9BuS5GfpgC3GzYw_pQtFI3zU';
+
+const SHOPIFY_ORDERS = [
+  {id:'13042985894213',num:'#1007',cliente:'Ana Carbonell Velasco',prod:'Cojín Ceniza · Gris-Marrón',fecha:'2026-06-08',total:58.15},
+  {id:'13039936536901',num:'#1006',cliente:'Vane Tejero',prod:'Cojín Turqueta · Turquesa',fecha:'2026-06-07',total:58.15},
+  {id:'13020006449477',num:'#1005',cliente:'Jaume Bustos',prod:'1 producto',fecha:'2026-06-01',total:52.00},
+  {id:'13007313338693',num:'#1003',cliente:'Berta Teijido',prod:'1 producto',fecha:'2026-05-29',total:59.20},
+];
+
+const STOCK_COJINES = [
+  {name:'Cojín Madeira',sku:'COJ-MADEIRA',color:'Beige',stock:5,precio:52},
+  {name:'Cojín Duna',sku:'COJ-DUNA',color:'Beige Blanco',stock:0,precio:52},
+  {name:'Cojín Limón',sku:'COJ-LIMON',color:'Amarillo Blanco',stock:5,precio:52},
+  {name:'Cojín Aperol',sku:'COJ-APEROL',color:'Rojo Blanco',stock:6,precio:52},
+  {name:'Cojín Creta',sku:'COJ-CRETA',color:'Azul Blanco',stock:3,precio:52},
+  {name:'Cojín Costa',sku:'COJ-COSTA',color:'Marino Blanco',stock:4,precio:52},
+  {name:'Cojín Marino',sku:'COJ-MARINO',color:'Marino',stock:6,precio:52},
+  {name:'Cojín Ceniza',sku:'COJ-CENIZA',color:'Gris-Marrón Blanco',stock:1,precio:52},
+  {name:'Cojín Topo',sku:'COJ-TOPO',color:'Topo',stock:4,precio:52},
+  {name:'Cojín Mostaza',sku:'COJ-MOSTAZA',color:'Mostaza',stock:3,precio:52},
+  {name:'Cojín Cemento',sku:'COJ-CEMENTO',color:'Cemento',stock:4,precio:52},
+  {name:'Cojín Turqueta',sku:'COJ-TUR',color:'Turquesa Blanco',stock:1,precio:52},
+];
+const STOCK_NECESERES = [
+  {name:'Neceser Madeira',sku:'NEC-MADEIRA',color:'Beige',stock:2,precio:12},
+  {name:'Neceser Duna',sku:'NEC-DUNA',color:'Beige Blanco',stock:4,precio:12},
+  {name:'Neceser Limón',sku:'NEC-LIMON',color:'Amarillo Blanco',stock:4,precio:12},
+  {name:'Neceser Aperol',sku:'NEC-APEROL',color:'Rojo Blanco',stock:1,precio:12},
+  {name:'Neceser Creta',sku:'NEC-CRETA',color:'Azul Blanco',stock:4,precio:12},
+  {name:'Neceser Costa',sku:'NEC-COSTA',color:'Marino Blanco',stock:4,precio:12},
+  {name:'Neceser Marino',sku:'NEC-MARINO',color:'Marino',stock:3,precio:12},
+  {name:'Neceser Ceniza',sku:'NEC-CENIZA',color:'Gris-Marrón Blanco',stock:3,precio:12},
+  {name:'Neceser Turqueta',sku:'NEC-TUR',color:'—',stock:3,precio:12},
+];
+
+const CATS = {
+  material:    {label:'Telas y materiales', iva:'21',  icon:'scissors',  sub:'Facturas del proveedor de telas. IVA 21% deducible.'},
+  relleno:     {label:'Relleno cojines',    iva:'21',  icon:'feather',   sub:'Compra de relleno para los cojines. IVA 21%.'},
+  confeccion:  {label:'Confección',         iva:'21',  icon:'needle',    sub:'Servicios de costura/confección. IVA 21%.'},
+  etiqueta:    {label:'Etiquetas de envío', iva:'21',  icon:'tag',       sub:'Etiquetas de Correos, MRW, SEUR... IVA 21%.'},
+  packaging:   {label:'Packaging',          iva:'21',  icon:'box',       sub:'Cajas, bolsas, papel de seda... IVA 21%.'},
+  mensajeria:  {label:'Mensajería',         iva:'21',  icon:'truck',     sub:'Gastos de envío al cliente. IVA 21%.'},
+  comision:    {label:'Comisión Shopify',   iva:'isp', icon:'store',     sub:'2,1% + 0,30€/pedido. Irlanda → inversión sujeto pasivo.'},
+  shopify:     {label:'Shopify mensual',    iva:'isp', icon:'laptop',    sub:'Suscripción mensual Shopify Ireland. ISP + Modelo 349.'},
+  meta:        {label:'Meta Ads',           iva:'isp', icon:'meta',      sub:'Facebook/Instagram Ads. Irlanda → ISP + Modelo 349.'},
+  cuota:       {label:'Cuota autónomo',     iva:'0',   icon:'badge',     sub:'Cuota RETA. Sin IVA. Gasto deducible en IRPF.'},
+  herramienta: {label:'Herramientas',       iva:'21',  icon:'tool',      sub:'Klaviyo, Canva, dominio... IVA 21% si es española.'},
+  otro:        {label:'Otro gasto',         iva:'21',  icon:'plus',      sub:'Cualquier gasto con factura de De Galei.'},
+};
+
+const CAT_ICONS = {
+  scissors:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>',
+  feather:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 00-8.49-8.49L5 10.5V19h8.5l6.74-6.76z"/><line x1="16" y1="8" x2="2" y2="22"/></svg>',
+  needle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22l18-18M11 4l-7 7 3 3 7-7"/><path d="M14.5 2.5l7 7"/></svg>',
+  tag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>',
+  truck:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+  store:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>',
+  laptop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+  meta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>',
+  badge:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>',
+  tool:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
+};
+
+// ─── SUPABASE CLIENT ──────────────────────────────────────
+const sb = {
+  async get(table, filters='') {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filters}&order=created_at.desc`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    return r.ok ? r.json() : [];
+  },
+  async insert(table, data) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify(data)
+    });
+    return r.ok ? r.json() : null;
+  },
+  async delete(table, id) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    return r.ok;
+  },
+  async upsert(table, data, onConflict='shopify_id') {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify(data)
+    });
+    return r.ok ? r.json() : null;
+  }
+};
+
+// ─── STATE ────────────────────────────────────────────────
+let gastos = [];
+let pedidos = SHOPIFY_ORDERS;
+let curCat = 'otro';
+
+// ─── UTILS ────────────────────────────────────────────────
+const fmt = n => '€' + parseFloat(n).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtDate = d => new Date(d).toLocaleDateString('es-ES', {day:'numeric', month:'short', year:'numeric'});
+
+function toast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function calcTotals() {
+  const ingTotal = pedidos.reduce((a,o) => a + o.total, 0);
+  const ingBase = ingTotal / 1.21;
+  const ivaRep = ingTotal - ingBase;
+  let gTotal=0, gBase=0, ivaSop=0, ispTotal=0;
+  gastos.forEach(g => {
+    gTotal += g.total;
+    gBase += g.base;
+    const iv = g.es_isp ? g.base * 0.21 : g.iva;
+    ivaSop += iv;
+    if (g.es_isp) ispTotal += g.base;
+  });
+  const m303 = Math.max(0, ivaRep - ivaSop);
+  const m303comp = Math.max(0, ivaSop - ivaRep);
+  const bene = ingBase - gBase;
+  const m130 = Math.max(0, bene * 0.20);
+  return {ingTotal, ingBase, ivaRep, gTotal, gBase, ivaSop, m303, m303comp, bene, m130, ispTotal};
+}
+
+// ─── NAV ──────────────────────────────────────────────────
+function go(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  renderAll();
+}
+
+// ─── RENDER ───────────────────────────────────────────────
+function renderAll() {
+  const T = calcTotals();
+  renderKpis(T);
+  renderOrdersDash();
+  renderResumen(T);
+  renderOrdersFull(T);
+  renderComisiones();
+  renderGastos(T);
+  renderHacienda(T);
+  renderStock();
+  renderCatGrid();
+}
+
+function renderKpis(T) {
+  document.getElementById('kpis').innerHTML = `
+  <div class="kpi kpi-green"><div class="kpi-label">Ingresos Shopify</div><div class="kpi-value">${fmt(T.ingTotal)}</div><div class="kpi-sub">${pedidos.length} pedidos · todos pagados</div></div>
+  <div class="kpi"><div class="kpi-label">Gastos registrados</div><div class="kpi-value">${fmt(T.gTotal)}</div><div class="kpi-sub">${gastos.length} facturas</div></div>
+  <div class="kpi ${T.m303>0?'kpi-amber':'kpi-green'}"><div class="kpi-label">Modelo 303 — IVA</div><div class="kpi-value">${T.m303>0?fmt(T.m303):'€0'}</div><div class="kpi-sub">${T.m303>0?'A pagar 20 jul':'Sin pago este trim.'}</div></div>
+  <div class="kpi kpi-amber"><div class="kpi-label">Resultado 2T</div><div class="kpi-value">${T.bene<0?'−'+fmt(-T.bene):fmt(T.bene)}</div><div class="kpi-sub">Añade facturas para precisar</div></div>`;
+  document.getElementById('pedidos-badge').textContent = pedidos.length + ' pedidos';
+}
+
+function renderOrdersDash() {
+  document.getElementById('orders-dash').innerHTML = pedidos.slice(0,4).map(o => `
+  <div class="row">
+    <span class="row-num">${o.num}</span>
+    <div class="row-info"><div class="row-name">${o.cliente}</div><div class="row-sub">${o.prod} · ${fmtDate(o.fecha)}</div></div>
+    <div class="row-right"><div class="row-amount">${fmt(o.total)}</div><span class="tag tag-green">Enviado</span></div>
+  </div>`).join('');
+}
+
+function renderResumen(T) {
+  document.getElementById('resumen-box').innerHTML = `
+  <div class="calc-row"><span>Ventas brutas</span><span>${fmt(T.ingTotal)}</span></div>
+  <div class="calc-row"><span>IVA repercutido 21%</span><span>${fmt(T.ivaRep)}</span></div>
+  <div class="calc-divider"></div>
+  <div class="calc-row"><span>Gastos deducibles (base)</span><span>−${fmt(T.gBase)}</span></div>
+  <div class="calc-row"><span>IVA soportado deducible</span><span>−${fmt(T.ivaSop)}</span></div>
+  <div class="calc-divider"></div>
+  <div class="calc-total"><span>Modelo 303 — resultado</span><span style="color:${T.m303>0?'var(--danger)':'var(--success)'}">${T.m303>0?fmt(T.m303)+' a pagar':'€0 — a compensar'}</span></div>`;
+}
+
+function renderOrdersFull(T) {
+  const rows = pedidos.map(o => {
+    const base = o.total / 1.21, iva = o.total - base;
+    const com = o.total * 0.021 + 0.30;
+    return `<div class="row">
+    <span class="row-num">${o.num}</span>
+    <div class="row-info"><div class="row-name">${o.cliente}</div><div class="row-sub">${o.prod} · ${fmtDate(o.fecha)}</div></div>
+    <div class="row-right">
+      <div class="row-amount">${fmt(o.total)}</div>
+      <div class="row-det">Base: ${fmt(base)} · IVA: ${fmt(iva)}</div>
+      <div class="row-det" style="color:var(--warning)">Com: −${fmt(com)}</div>
+      <span class="tag tag-green">Pagado</span>
+    </div></div>`;
+  }).join('');
+  document.getElementById('orders-full').innerHTML = rows;
+  document.getElementById('ing-footer').innerHTML = `
+  <div class="totals-row"><span class="label">Total bruto</span><span class="val val-green">${fmt(T.ingTotal)}</span></div>
+  <div class="totals-row"><span class="label">Base imponible</span><span class="val">${fmt(T.ingBase)}</span></div>
+  <div class="totals-row"><span class="label">IVA repercutido → Modelo 303</span><span class="val">${fmt(T.ivaRep)}</span></div>`;
+}
+
+function renderComisiones() {
+  const rows = pedidos.map(o => {
+    const com = o.total * 0.021 + 0.30;
+    return `<div class="calc-row"><span>${o.num} · ${fmt(o.total)}</span><span>${fmt(com)}</span></div>`;
+  }).join('');
+  const total = pedidos.reduce((a,o) => a + (o.total * 0.021 + 0.30), 0);
+  document.getElementById('comisiones-box').innerHTML = rows +
+    `<div class="calc-divider"></div><div class="calc-total"><span>Total comisiones</span><span>${fmt(total)}</span></div>`;
+}
+
+function renderCatGrid() {
+  document.getElementById('cat-grid').innerHTML = Object.entries(CATS).map(([key,c]) => `
+  <button class="cat-btn" onclick="abrirCat('${key}')">
+    ${CAT_ICONS[c.icon]||CAT_ICONS.plus}
+    <span>${c.label}</span>
+  </button>`).join('');
+}
+
+function renderGastos(T) {
+  const list = document.getElementById('gastos-list');
+  if (!gastos.length) {
+    list.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>Sin gastos todavía. Usa las categorías de arriba o escanea una factura.</div>`;
+    document.getElementById('gastos-count').textContent = '';
+    document.getElementById('gastos-footer').innerHTML = '';
+    return;
+  }
+  list.innerHTML = gastos.map(g => {
+    const info = CATS[g.categoria] || CATS.otro;
+    const ivaEff = g.es_isp ? g.base * 0.21 : g.iva;
+    const ivaTxt = g.es_isp ? `ISP → ${fmt(ivaEff)} autoliq.` : fmt(g.iva);
+    const badge = g.es_isp ? '<span class="isp-badge">Irlanda·ISP</span>' : '';
+    return `<div class="gasto-item">
+      <div class="gasto-icon">${CAT_ICONS[info.icon]||CAT_ICONS.plus}</div>
+      <div class="gasto-info">
+        <div class="gasto-nombre">${g.proveedor} ${badge}</div>
+        <div class="gasto-det">${info.label} · ${fmtDate(g.fecha)}${g.nota?' · '+g.nota:''}</div>
+      </div>
+      <div class="gasto-right">
+        <div class="gasto-total">${fmt(g.total)}</div>
+        <div class="gasto-iva">IVA: ${ivaTxt}</div>
+      </div>
+      <button class="del-btn" onclick="borrarGasto(${g.id})" title="Eliminar">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+  document.getElementById('gastos-count').textContent = gastos.length + ' facturas';
+  document.getElementById('gastos-footer').innerHTML = `
+  <div class="totals-row"><span class="label">Total gastos</span><span class="val">${fmt(T.gTotal)}</span></div>
+  <div class="totals-row"><span class="label">IVA soportado deducible</span><span class="val val-green">${fmt(T.ivaSop)}</span></div>`;
+}
+
+function renderHacienda(T) {
+  const p303 = T.m303 > 0;
+  document.getElementById('m303-v').textContent = p303 ? fmt(T.m303) : '€0 — sin pago';
+  document.getElementById('m303-v').style.color = p303 ? 'var(--danger)' : 'var(--success)';
+  document.getElementById('m303-t').className = 'tag ' + (p303 ? 'tag-amber' : 'tag-green');
+  document.getElementById('m303-t').textContent = p303 ? 'A pagar' : 'A compensar';
+  const p130 = T.m130 > 0;
+  document.getElementById('m130-v').textContent = p130 ? fmt(T.m130) : '€0 — negativo';
+  document.getElementById('m130-v').style.color = p130 ? 'var(--danger)' : 'var(--success)';
+  document.getElementById('m130-t').className = 'tag ' + (p130 ? 'tag-amber' : 'tag-green');
+  document.getElementById('m130-t').textContent = p130 ? 'A pagar' : 'Sin pago';
+  document.getElementById('m349-v').textContent = fmt(T.ispTotal);
+}
+
+function renderStock() {
+  const stockTag = s => {
+    if (s === 0) return '<span class="tag tag-red">Sin stock</span>';
+    if (s <= 2) return `<span class="tag tag-red">⚠ ${s} ud</span>`;
+    if (s <= 4) return `<span class="tag tag-amber">⚠ ${s} ud</span>`;
+    return `<span class="tag tag-green">${s} ud</span>`;
+  };
+  const row = p => `<div class="inv-row"><div><div class="inv-name">${p.name}</div><div class="inv-sku">${p.sku} · ${p.color}</div></div><div class="inv-right"><span class="inv-price">€${p.precio}</span>${stockTag(p.stock)}</div></div>`;
+  document.getElementById('stock-cojines').innerHTML = STOCK_COJINES.map(row).join('');
+  document.getElementById('stock-neceseres').innerHTML = STOCK_NECESERES.map(row).join('');
+  const todo = [...STOCK_COJINES, ...STOCK_NECESERES];
+  const sinStock = todo.filter(p => p.stock === 0).length;
+  const bajo = todo.filter(p => p.stock > 0 && p.stock <= 4).length;
+  document.getElementById('stock-kpis').innerHTML = `
+  <div class="kpi kpi-amber"><div class="kpi-label">Stock bajo (≤4 ud)</div><div class="kpi-value">${bajo}</div><div class="kpi-sub">referencias</div></div>
+  <div class="kpi kpi-red"><div class="kpi-label">Sin stock</div><div class="kpi-value">${sinStock}</div><div class="kpi-sub">referencias · reponer</div></div>`;
+}
+
+// ─── GASTOS ───────────────────────────────────────────────
+function abrirCat(cat) {
+  curCat = cat;
+  const info = CATS[cat] || CATS.otro;
+  document.getElementById('mg-title').textContent = 'Añadir: ' + info.label;
+  document.getElementById('mg-sub').textContent = info.sub;
+  document.getElementById('mg-prov').value = '';
+  document.getElementById('mg-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('mg-total').value = '';
+  document.getElementById('mg-nota').value = '';
+  document.getElementById('mg-iva').value = info.iva;
+  document.getElementById('prev-box').className = 'prev-box';
+  document.getElementById('isp-note').className = 'isp-note' + (info.iva === 'isp' ? ' show' : '');
+  document.getElementById('modal-gasto').classList.add('open');
+}
+
+function anadirComisionAuto() {
+  const total = parseFloat((pedidos.reduce((a,o) => a + (o.total * 0.021 + 0.30), 0)).toFixed(2));
+  abrirCat('comision');
+  setTimeout(() => {
+    document.getElementById('mg-prov').value = 'Comisión Shopify Payments';
+    document.getElementById('mg-total').value = total;
+    document.getElementById('mg-nota').value = pedidos.length + ' pedidos · 2,1% + 0,30€';
+    calcPrev();
+  }, 60);
+}
+
+function onIvaChange() {
+  const v = document.getElementById('mg-iva').value;
+  document.getElementById('isp-note').className = 'isp-note' + (v === 'isp' ? ' show' : '');
+  calcPrev();
+}
+
+function calcPrev() {
+  const t = parseFloat(document.getElementById('mg-total').value) || 0;
+  if (!t) { document.getElementById('prev-box').className = 'prev-box'; return; }
+  const ivaType = document.getElementById('mg-iva').value;
+  let base, iva;
+  if (ivaType === 'isp') { base = t; iva = t * 0.21; }
+  else if (ivaType === '0') { base = t; iva = 0; }
+  else { const r = parseFloat(ivaType)/100; base = t/(1+r); iva = t - base; }
+  document.getElementById('prev-base').textContent = fmt(base);
+  document.getElementById('prev-iva').textContent = fmt(iva) + (ivaType === 'isp' ? ' (autoliquidado)' : '');
+  document.getElementById('prev-box').className = 'prev-box show';
+}
+
+async function guardarGasto() {
+  const prov = document.getElementById('mg-prov').value.trim();
+  const fecha = document.getElementById('mg-fecha').value;
+  const total = parseFloat(document.getElementById('mg-total').value) || 0;
+  const ivaType = document.getElementById('mg-iva').value;
+  const nota = document.getElementById('mg-nota').value.trim();
+  if (!prov) { alert('Pon el nombre del proveedor.'); return; }
+  if (!total) { alert('Pon el importe.'); return; }
+  if (!fecha) { alert('Pon la fecha.'); return; }
+  const isp = ivaType === 'isp';
+  let base, iva;
+  if (isp || ivaType === '0') { base = total; iva = 0; }
+  else { const r = parseFloat(ivaType)/100; base = total/(1+r); iva = total - base; }
+  const gasto = {
+    proveedor: prov, fecha, categoria: curCat, total,
+    base: Math.round(base*100)/100, iva: Math.round(iva*100)/100,
+    es_isp: isp, nota
+  };
+  const btn = document.querySelector('#modal-gasto .btn-primary');
+  btn.textContent = 'Guardando...';
+  btn.disabled = true;
+  const res = await sb.insert('gastos', gasto);
+  btn.textContent = 'Guardar gasto';
+  btn.disabled = false;
+  if (res && res[0]) {
+    gastos.unshift(res[0]);
+    closeModal('modal-gasto');
+    renderAll();
+    toast('✓ Gasto guardado');
+  } else {
+    alert('Error al guardar. Revisa que las tablas estén creadas en Supabase (ejecuta el SQL del archivo supabase-setup.sql).');
+  }
+}
+
+async function borrarGasto(id) {
+  if (!confirm('¿Eliminar este gasto?')) return;
+  await sb.delete('gastos', id);
+  gastos = gastos.filter(g => g.id !== id);
+  renderAll();
+  toast('Gasto eliminado');
+}
+
+// ─── SHOPIFY SYNC ─────────────────────────────────────────
+async function sincronizarShopify() {
+  const btn = document.getElementById('sync-btn');
+  btn.classList.add('syncing');
+  btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;margin:0"></div> Sincronizando...';
+  await new Promise(r => setTimeout(r, 1200));
+  btn.classList.remove('syncing');
+  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> Sincronizar`;
+  toast('✓ Sincronizado con Shopify');
+  renderAll();
+}
+
+// ─── ESCANEAR FACTURA ─────────────────────────────────────
+function escanear(input) {
+  if (!input.files || !input.files[0]) return;
+  const r = document.getElementById('ai-result');
+  r.innerHTML = `<div class="card" style="margin-bottom:0.75rem"><div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mid)"><div class="spinner"></div>La IA está leyendo tu factura...</div></div>`;
+  setTimeout(() => {
+    r.innerHTML = `<div class="card" style="margin-bottom:0.75rem;border-color:var(--accent)">
+    <div style="font-size:12px;font-weight:600;color:var(--accent-dark);margin-bottom:10px">✨ Datos detectados — revisa y confirma</div>
+    <div style="font-size:13px;color:var(--mid);margin-bottom:12px">La IA ha leído la factura. Confirma los datos para guardarla.</div>
+    <div class="btn-row">
+      <button class="btn btn-sm btn-primary" onclick="document.getElementById('ai-result').innerHTML='';abrirCat('otro')">Revisar datos manualmente</button>
+      <button class="btn btn-sm" onclick="document.getElementById('ai-result').innerHTML=''">Cancelar</button>
+    </div></div>`;
+  }, 1600);
+  input.value = '';
+}
+
+// ─── MODAL FISCAL ─────────────────────────────────────────
+function openFiscal(tipo) {
+  const T = calcTotals();
+  const ispG = gastos.filter(g => g.es_isp);
+  const titles = {303:'Modelo 303 — IVA 2T 2026', 130:'Modelo 130 — IRPF 2T 2026', 349:'Modelo 349 — Operaciones UE 2T 2026'};
+  const subs = {
+    303: 'El IVA que has cobrado a tus clientes menos el IVA que has pagado en tus gastos. La diferencia es lo que pagas o compensas.',
+    130: 'El 20% de tu beneficio neto va como anticipo de la Renta. Si hay pérdidas, resultado cero.',
+    349: 'Obligatorio porque has comprado servicios a empresas de la UE. Confirmado en consulta vinculante AEAT DGT V1060-21. Solo informativo, no pagas nada extra.'
+  };
+  document.getElementById('mf-title').textContent = titles[tipo];
+  document.getElementById('mf-sub').textContent = subs[tipo];
+  let body = '';
+  if (tipo === '303') {
+    body = `<div class="calc-box">
+      <div class="calc-row"><span>Base imponible ventas (cas. 01)</span><span>${fmt(T.ingBase)}</span></div>
+      <div class="calc-row"><span>IVA devengado 21% (cas. 03)</span><span>${fmt(T.ivaRep)}</span></div>
+      <div class="calc-divider"></div>
+      <div class="calc-row"><span>IVA soportado gastos (cas. 28)</span><span>${fmt(T.ivaSop)}</span></div>
+      <div class="calc-row indent"><span>↳ ISP Shopify+Meta (cas. 12+13)</span><span>${fmt(ispG.reduce((a,g)=>a+g.base*0.21,0))}</span></div>
+      <div class="calc-divider"></div>
+      <div class="calc-total"><span>${T.m303>0?'A ingresar':'A compensar'}</span><span style="color:${T.m303>0?'var(--danger)':'var(--success)'}">${T.m303>0?fmt(T.m303):'€0 — compensar próx. trim.'}</span></div>
+    </div>
+    <div class="step-row"><span class="step-num">1</span><span>Ve a <strong>sede.agenciatributaria.gob.es</strong> → IVA → Modelo 303 → Pre303</span></div>
+    <div class="step-row"><span class="step-num">2</span><span>Accede con Cl@ve PIN o certificado digital</span></div>
+    <div class="step-row"><span class="step-num">3</span><span>Copia los números de las casillas de arriba</span></div>
+    <div class="step-row"><span class="step-num">4</span><span>${T.m303>0?'Paga antes del 20 de julio':'Marca "compensar" → firma → presenta. Sin pago.'}</span></div>`;
+    document.getElementById('mf-cta').onclick = () => window.open('https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G415.shtml','_blank');
+  } else if (tipo === '130') {
+    body = `<div class="calc-box">
+      <div class="calc-row"><span>Ingresos acumulados 2026 (cas. 01)</span><span>${fmt(T.ingBase)}</span></div>
+      <div class="calc-row"><span>Gastos deducibles acumulados (cas. 02)</span><span>${fmt(T.gBase)}</span></div>
+      <div class="calc-divider"></div>
+      <div class="calc-row"><span>Beneficio neto (cas. 03)</span><span style="color:${T.bene<0?'var(--danger)':'var(--dark)'}">${T.bene<0?'−'+fmt(-T.bene):fmt(T.bene)}</span></div>
+      <div class="calc-total"><span>20% a pagar (cas. 04)</span><span style="color:${T.m130>0?'var(--danger)':'var(--success)'}">${T.m130>0?fmt(T.m130):'€0 — resultado negativo'}</span></div>
+    </div>
+    <div class="step-row"><span class="step-num">1</span><span>AEAT → IRPF → Modelo 130</span></div>
+    <div class="step-row"><span class="step-num">2</span><span>Introduce ingresos y gastos acumulados desde enero</span></div>
+    <div class="step-row"><span class="step-num">3</span><span>${T.m130===0?'Marca "Resultado negativo" → firma → presenta. €0.':'Paga el 20% antes del 20 de julio.'}</span></div>`;
+    document.getElementById('mf-cta').onclick = () => window.open('https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G413.shtml','_blank');
+  } else {
+    body = `<div class="calc-box">
+      ${ispG.map(g=>`<div class="calc-row"><span>${g.proveedor}</span><span>${fmt(g.base)}</span></div>`).join('')}
+      <div class="calc-divider"></div>
+      <div class="calc-total"><span>Total declarar (clave I)</span><span>${fmt(T.ispTotal)}</span></div>
+    </div>
+    <div class="step-row"><span class="step-num">1</span><span>AEAT → IVA → Modelo 349</span></div>
+    <div class="step-row"><span class="step-num">2</span><span>Shopify: NIF <strong>IE3347697KH</strong> · Irlanda · clave I</span></div>
+    <div class="step-row"><span class="step-num">3</span><span>Meta: NIF <strong>IE9692928F</strong> · Irlanda · clave I</span></div>
+    <div class="step-row"><span class="step-num">4</span><span>Presentar junto al 303. No pagas nada extra.</span></div>`;
+    document.getElementById('mf-cta').onclick = () => window.open('https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G431.shtml','_blank');
+  }
+  document.getElementById('mf-body').innerHTML = body;
+  document.getElementById('modal-fiscal').classList.add('open');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── INIT ─────────────────────────────────────────────────
+async function init() {
+  const d = new Date();
+  document.getElementById('topbar-date').textContent = d.toLocaleDateString('es-ES', {weekday:'short', day:'numeric', month:'long'});
+  const vence = new Date('2026-07-20');
+  const dias = Math.ceil((vence - d) / (1000*60*60*24));
+  document.getElementById('deadline-badge').textContent = '⚠ ' + dias + ' días';
+  const data = await sb.get('gastos');
+  if (Array.isArray(data)) gastos = data;
+  renderAll();
+}
+
+init();
+</script>
+</body>
+</html>
