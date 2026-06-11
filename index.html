@@ -440,10 +440,10 @@ const SUPABASE_URL = 'https://gmllxnakjiuslbicabvc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtbGx4bmFraml1c2xiaWNhYnZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMDQ4OTEsImV4cCI6MjA5NjY4MDg5MX0.2yoKpCPOFgoeJ1usmJwQzsMDz8cH51TuvwDA8c2AiVw';
 
 const SHOPIFY_ORDERS = [
-  {id:'13042985894213',num:'#1007',cliente:'Ana Carbonell Velasco',prod:'Cojín Ceniza · Gris-Marrón',fecha:'2026-06-08',total:58.15},
-  {id:'13039936536901',num:'#1006',cliente:'Vane Tejero',prod:'Cojín Turqueta · Turquesa',fecha:'2026-06-07',total:58.15},
-  {id:'13020006449477',num:'#1005',cliente:'Jaume Bustos',prod:'1 producto',fecha:'2026-06-01',total:52.00},
-  {id:'13007313338693',num:'#1003',cliente:'Berta Teijido',prod:'1 producto',fecha:'2026-05-29',total:59.20},
+  {id:'13042985894213',num:'#1007',cliente:'Ana Carbonell Velasco',prod:'Cojín Ceniza',fecha:'2026-06-08',producto:52.00,envio:6.15,total:58.15},
+  {id:'13039936536901',num:'#1006',cliente:'Vane Tejero',prod:'Cojín Turqueta',fecha:'2026-06-07',producto:52.00,envio:6.15,total:58.15},
+  {id:'13020006449477',num:'#1005',cliente:'Jaume Bustos',prod:'Cojín Costa',fecha:'2026-06-01',producto:52.00,envio:0.00,total:52.00},
+  {id:'13007313338693',num:'#1003',cliente:'Berta Teijido',prod:'Cojín Creta',fecha:'2026-05-29',producto:52.00,envio:7.20,total:59.20},
 ];
 
 const STOCK_COJINES = [
@@ -626,9 +626,10 @@ function renderOrdersFull(T) {
   const rows = pedidos.map(o => {
     const base = o.total / 1.21, iva = o.total - base;
     const com = o.total * 0.021 + 0.30;
+    const envioTxt = o.envio > 0 ? `Producto ${fmt(o.producto)} + envío ${fmt(o.envio)}` : `Producto ${fmt(o.producto)} · envío gratis`;
     return `<div class="row">
     <span class="row-num">${o.num}</span>
-    <div class="row-info"><div class="row-name">${o.cliente}</div><div class="row-sub">${o.prod} · ${fmtDate(o.fecha)}</div></div>
+    <div class="row-info"><div class="row-name">${o.cliente}</div><div class="row-sub">${o.prod} · ${fmtDate(o.fecha)}</div><div class="row-sub" style="color:var(--mid)">${envioTxt}</div></div>
     <div class="row-right">
       <div class="row-amount">${fmt(o.total)}</div>
       <div class="row-det">Base: ${fmt(base)} · IVA: ${fmt(iva)}</div>
