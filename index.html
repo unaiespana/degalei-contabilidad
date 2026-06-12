@@ -831,17 +831,52 @@ async function sincronizarShopify() {
 // ─── ESCANEAR FACTURA ─────────────────────────────────────
 function escanear(input) {
   if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
   const r = document.getElementById('ai-result');
   r.innerHTML = `<div class="card" style="margin-bottom:0.75rem"><div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mid)"><div class="spinner"></div>La IA está leyendo tu factura...</div></div>`;
-  setTimeout(() => {
-    r.innerHTML = `<div class="card" style="margin-bottom:0.75rem;border-color:var(--accent)">
-    <div style="font-size:12px;font-weight:600;color:var(--accent-dark);margin-bottom:10px">✨ Datos detectados — revisa y confirma</div>
-    <div style="font-size:13px;color:var(--mid);margin-bottom:12px">La IA ha leído la factura. Confirma los datos para guardarla.</div>
-    <div class="btn-row">
-      <button class="btn btn-sm btn-primary" onclick="document.getElementById('ai-result').innerHTML='';abrirCat('otro')">Revisar datos manualmente</button>
-      <button class="btn btn-sm" onclick="document.getElementById('ai-result').innerHTML=''">Cancelar</button>
-    </div></div>`;
-  }, 1600);
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const base64 = e.target.result.split(',')[1];
+    const mediaType = file.type || 'image/jpeg';
+    try {
+      const resp = await fetch('/api/escanear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mediaType })
+      });
+      const json = await resp.json();
+      if (json.ok && json.datos) {
+        const d = json.datos;
+        // Abrir el formulario y rellenarlo con los datos detectados
+        abrirCat('otro');
+        setTimeout(() => {
+          if (d.proveedor) document.getElementById('mg-prov').value = d.proveedor;
+          if (d.fecha) document.getElementById('mg-fecha').value = d.fecha;
+          if (d.total) document.getElementById('mg-total').value = d.total;
+          if (d.tipo_iva) document.getElementById('mg-iva').value = d.tipo_iva;
+          if (d.numero_factura) document.getElementById('mg-nota').value = 'Factura nº ' + d.numero_factura;
+          calcPrev();
+        }, 80);
+        r.innerHTML = `<div class="card" style="margin-bottom:0.75rem;border-color:var(--success)">
+        <div style="font-size:13px;color:var(--success);font-weight:600">✓ Factura leída — revisa los datos en el formulario y guarda</div></div>`;
+        setTimeout(() => { r.innerHTML = ''; }, 4000);
+      } else {
+        r.innerHTML = `<div class="card" style="margin-bottom:0.75rem;border-color:var(--danger)">
+        <div style="font-size:13px;color:var(--danger);font-weight:600;margin-bottom:6px">No se pudo leer la factura automáticamente</div>
+        <div style="font-size:12px;color:var(--mid);margin-bottom:10px">Puedes meterla a mano sin problema.</div>
+        <div class="btn-row"><button class="btn btn-sm btn-primary" onclick="document.getElementById('ai-result').innerHTML='';abrirCat('otro')">Meter a mano</button>
+        <button class="btn btn-sm" onclick="document.getElementById('ai-result').innerHTML=''">Cerrar</button></div></div>`;
+      }
+    } catch (err) {
+      r.innerHTML = `<div class="card" style="margin-bottom:0.75rem;border-color:var(--danger)">
+      <div style="font-size:13px;color:var(--danger);font-weight:600;margin-bottom:6px">Error de conexión con la IA</div>
+      <div style="font-size:12px;color:var(--mid);margin-bottom:10px">Mete el gasto a mano mientras tanto.</div>
+      <div class="btn-row"><button class="btn btn-sm btn-primary" onclick="document.getElementById('ai-result').innerHTML='';abrirCat('otro')">Meter a mano</button>
+      <button class="btn btn-sm" onclick="document.getElementById('ai-result').innerHTML=''">Cerrar</button></div></div>`;
+    }
+  };
+  reader.readAsDataURL(file);
   input.value = '';
 }
 
