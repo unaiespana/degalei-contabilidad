@@ -862,8 +862,11 @@ function escanear(input) {
         <div style="font-size:13px;color:var(--success);font-weight:600">✓ Factura leída — revisa los datos en el formulario y guarda</div></div>`;
         setTimeout(() => { r.innerHTML = ''; }, 4000);
       } else {
+        const motivo = json.error ? json.error : 'Motivo desconocido';
+        const detalle = json.detail ? (typeof json.detail === 'string' ? json.detail : JSON.stringify(json.detail)) : (json.raw || '');
         r.innerHTML = `<div class="card" style="margin-bottom:0.75rem;border-color:var(--danger)">
         <div style="font-size:13px;color:var(--danger);font-weight:600;margin-bottom:6px">No se pudo leer la factura automáticamente</div>
+        <div style="font-size:11px;color:var(--light);margin-bottom:8px">${motivo}${detalle ? ' — ' + detalle.substring(0,200) : ''}</div>
         <div style="font-size:12px;color:var(--mid);margin-bottom:10px">Puedes meterla a mano sin problema.</div>
         <div class="btn-row"><button class="btn btn-sm btn-primary" onclick="document.getElementById('ai-result').innerHTML='';abrirCat('otro')">Meter a mano</button>
         <button class="btn btn-sm" onclick="document.getElementById('ai-result').innerHTML=''">Cerrar</button></div></div>`;
