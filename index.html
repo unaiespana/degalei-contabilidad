@@ -389,6 +389,23 @@
     <div class="modal-title" id="mg-title">Añadir gasto</div>
     <div class="modal-sub" id="mg-sub"></div>
     <div class="modal-row"><label class="modal-label">Proveedor / empresa</label><input type="text" id="mg-prov" placeholder="Ej: Telas Martínez SL"></div>
+    <div class="modal-row">
+      <label class="modal-label">Tipo de gasto / categoría</label>
+      <select id="mg-cat" onchange="onCatChange()">
+        <option value="material">Telas y materiales</option>
+        <option value="relleno">Relleno cojines</option>
+        <option value="confeccion">Confección</option>
+        <option value="etiqueta">Etiquetas de envío</option>
+        <option value="packaging">Packaging</option>
+        <option value="mensajeria">Mensajería</option>
+        <option value="comision">Comisión Shopify</option>
+        <option value="shopify">Shopify mensual</option>
+        <option value="meta">Meta Ads</option>
+        <option value="cuota">Cuota autónomo</option>
+        <option value="herramienta">Herramientas</option>
+        <option value="otro">Otro gasto</option>
+      </select>
+    </div>
     <div class="modal-2col">
       <div class="modal-row"><label class="modal-label">Fecha</label><input type="date" id="mg-fecha"></div>
       <div class="modal-row"><label class="modal-label">Total con IVA (€)</label><input type="number" id="mg-total" placeholder="121.00" step="0.01" oninput="calcPrev()"></div>
@@ -525,6 +542,14 @@ const sb = {
     });
     return r.ok;
   },
+  async update(table, id, data) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify(data)
+    });
+    return r.ok ? r.json() : null;
+  },
   async upsert(table, data, onConflict='shopify_id') {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
       method: 'POST',
@@ -539,6 +564,7 @@ const sb = {
 let gastos = [];
 let pedidos = SHOPIFY_ORDERS;
 let curCat = 'otro';
+let editId = null;
 
 // ─── UTILS ────────────────────────────────────────────────
 const fmt = n => '€' + parseFloat(n).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -685,6 +711,9 @@ function renderGastos(T) {
         <div class="gasto-total">${fmt(g.total)}</div>
         <div class="gasto-iva">IVA: ${ivaTxt}</div>
       </div>
+      <button class="del-btn" onclick="editarGasto(${g.id})" title="Editar" style="color:var(--accent-dark)">
+        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
       <button class="del-btn" onclick="borrarGasto(${g.id})" title="Eliminar">
         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
       </button>
@@ -729,18 +758,49 @@ function renderStock() {
 }
 
 // ─── GASTOS ───────────────────────────────────────────────
+function onCatChange() {
+  const cat = document.getElementById('mg-cat').value;
+  const info = CATS[cat] || CATS.otro;
+  document.getElementById('mg-sub').textContent = info.sub;
+  document.getElementById('mg-iva').value = info.iva;
+  onIvaChange();
+}
+
 function abrirCat(cat) {
+  editId = null;
   curCat = cat;
   const info = CATS[cat] || CATS.otro;
   document.getElementById('mg-title').textContent = 'Añadir: ' + info.label;
   document.getElementById('mg-sub').textContent = info.sub;
   document.getElementById('mg-prov').value = '';
+  document.getElementById('mg-cat').value = cat;
   document.getElementById('mg-fecha').value = new Date().toISOString().split('T')[0];
   document.getElementById('mg-total').value = '';
   document.getElementById('mg-nota').value = '';
   document.getElementById('mg-iva').value = info.iva;
   document.getElementById('prev-box').className = 'prev-box';
   document.getElementById('isp-note').className = 'isp-note' + (info.iva === 'isp' ? ' show' : '');
+  document.querySelector('#modal-gasto .btn-primary').innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Guardar gasto';
+  document.getElementById('modal-gasto').classList.add('open');
+}
+
+function editarGasto(id) {
+  const g = gastos.find(x => x.id === id);
+  if (!g) return;
+  editId = id;
+  curCat = g.categoria;
+  const info = CATS[g.categoria] || CATS.otro;
+  document.getElementById('mg-title').textContent = 'Editar gasto';
+  document.getElementById('mg-sub').textContent = 'Modifica lo que necesites y guarda los cambios.';
+  document.getElementById('mg-prov').value = g.proveedor;
+  document.getElementById('mg-cat').value = g.categoria;
+  document.getElementById('mg-fecha').value = g.fecha;
+  document.getElementById('mg-total').value = g.total;
+  document.getElementById('mg-nota').value = g.nota || '';
+  document.getElementById('mg-iva').value = g.es_isp ? 'isp' : String(g.iva > 0 ? Math.round(g.iva / g.base * 100) : (info.iva === '0' ? '0' : '21'));
+  document.getElementById('isp-note').className = 'isp-note' + (g.es_isp ? ' show' : '');
+  document.querySelector('#modal-gasto .btn-primary').innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Guardar cambios';
+  calcPrev();
   document.getElementById('modal-gasto').classList.add('open');
 }
 
@@ -776,6 +836,7 @@ function calcPrev() {
 
 async function guardarGasto() {
   const prov = document.getElementById('mg-prov').value.trim();
+  const cat = document.getElementById('mg-cat').value;
   const fecha = document.getElementById('mg-fecha').value;
   const total = parseFloat(document.getElementById('mg-total').value) || 0;
   const ivaType = document.getElementById('mg-iva').value;
@@ -788,23 +849,43 @@ async function guardarGasto() {
   if (isp || ivaType === '0') { base = total; iva = 0; }
   else { const r = parseFloat(ivaType)/100; base = total/(1+r); iva = total - base; }
   const gasto = {
-    proveedor: prov, fecha, categoria: curCat, total,
+    proveedor: prov, fecha, categoria: cat, total,
     base: Math.round(base*100)/100, iva: Math.round(iva*100)/100,
     es_isp: isp, nota
   };
   const btn = document.querySelector('#modal-gasto .btn-primary');
+  const originalHTML = btn.innerHTML;
   btn.textContent = 'Guardando...';
   btn.disabled = true;
-  const res = await sb.insert('gastos', gasto);
-  btn.textContent = 'Guardar gasto';
-  btn.disabled = false;
-  if (res && res[0]) {
-    gastos.unshift(res[0]);
-    closeModal('modal-gasto');
-    renderAll();
-    toast('✓ Gasto guardado');
+
+  if (editId) {
+    // EDITAR gasto existente
+    const res = await sb.update('gastos', editId, gasto);
+    btn.innerHTML = originalHTML;
+    btn.disabled = false;
+    if (res && res[0]) {
+      const idx = gastos.findIndex(x => x.id === editId);
+      if (idx !== -1) gastos[idx] = res[0];
+      editId = null;
+      closeModal('modal-gasto');
+      renderAll();
+      toast('✓ Cambios guardados');
+    } else {
+      alert('Error al guardar los cambios. Inténtalo de nuevo.');
+    }
   } else {
-    alert('Error al guardar. Revisa que las tablas estén creadas en Supabase (ejecuta el SQL del archivo supabase-setup.sql).');
+    // CREAR gasto nuevo
+    const res = await sb.insert('gastos', gasto);
+    btn.innerHTML = originalHTML;
+    btn.disabled = false;
+    if (res && res[0]) {
+      gastos.unshift(res[0]);
+      closeModal('modal-gasto');
+      renderAll();
+      toast('✓ Gasto guardado');
+    } else {
+      alert('Error al guardar. Revisa que las tablas estén creadas en Supabase.');
+    }
   }
 }
 
@@ -848,19 +929,26 @@ function escanear(input) {
       const json = await resp.json();
       if (json.ok && json.datos) {
         const d = json.datos;
-        // Abrir el formulario y rellenarlo con los datos detectados
-        abrirCat('otro');
+        // Abrir el formulario en la categoría que la IA ha detectado
+        const catDetectada = (d.categoria && CATS[d.categoria]) ? d.categoria : 'otro';
+        abrirCat(catDetectada);
         setTimeout(() => {
           if (d.proveedor) document.getElementById('mg-prov').value = d.proveedor;
           if (d.fecha) document.getElementById('mg-fecha').value = d.fecha;
           if (d.total) document.getElementById('mg-total').value = d.total;
-          if (d.tipo_iva) document.getElementById('mg-iva').value = d.tipo_iva;
+          document.getElementById('mg-cat').value = catDetectada;
+          // Si la IA detectó un IVA concreto y no es ISP, respetarlo
+          if (d.tipo_iva && !CATS[catDetectada].iva.includes('isp')) {
+            document.getElementById('mg-iva').value = d.tipo_iva;
+          }
           if (d.numero_factura) document.getElementById('mg-nota').value = 'Factura nº ' + d.numero_factura;
+          onIvaChange();
           calcPrev();
         }, 80);
+        const nombreCat = CATS[catDetectada].label;
         r.innerHTML = `<div class="card" style="margin-bottom:0.75rem;border-color:var(--success)">
-        <div style="font-size:13px;color:var(--success);font-weight:600">✓ Factura leída — revisa los datos en el formulario y guarda</div></div>`;
-        setTimeout(() => { r.innerHTML = ''; }, 4000);
+        <div style="font-size:13px;color:var(--success);font-weight:600">✓ Factura leída como "${nombreCat}" — revisa y cambia la categoría si hace falta, luego guarda</div></div>`;
+        setTimeout(() => { r.innerHTML = ''; }, 5000);
       } else {
         const motivo = json.error ? json.error : 'Motivo desconocido';
         const detalle = json.detail ? (typeof json.detail === 'string' ? json.detail : JSON.stringify(json.detail)) : (json.raw || '');
