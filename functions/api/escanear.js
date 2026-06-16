@@ -21,15 +21,32 @@ export async function onRequestPost(context) {
       });
     }
 
-    const prompt = `Eres un asistente de contabilidad. Analiza esta factura y extrae EXACTAMENTE estos datos en formato JSON, sin texto adicional, sin markdown:
+    const prompt = `Eres un asistente de contabilidad de De Galei, una marca española de accesorios de playa (cojines y neceseres) que vende por Shopify. Analiza esta factura y extrae EXACTAMENTE estos datos en formato JSON, sin texto adicional, sin markdown:
 {
   "proveedor": "nombre de la empresa que emite la factura",
   "fecha": "fecha en formato YYYY-MM-DD",
   "total": número total con IVA incluido (solo el número, punto decimal),
   "tipo_iva": "21", "10", "4" o "0" según el IVA aplicado,
-  "numero_factura": "número de la factura si aparece, si no cadena vacía"
+  "numero_factura": "número de la factura si aparece, si no cadena vacía",
+  "categoria": una de estas claves según lo que sea la factura
 }
-Si no encuentras algún dato, usa: proveedor "" , fecha de hoy, total 0, tipo_iva "21", numero_factura "".
+
+Claves de categoría posibles y cuándo usarlas:
+- "material": telas, tejidos, materias primas para fabricar
+- "relleno": relleno o guata para los cojines
+- "confeccion": servicios de costura, confección o taller
+- "etiqueta": etiquetas de envío de Correos, MRW, SEUR, GLS, etc.
+- "packaging": cajas, bolsas, papel de seda, material de embalaje
+- "mensajeria": transporte o envío de paquetes al cliente
+- "comision": comisiones de Shopify Payments
+- "shopify": suscripción mensual de Shopify
+- "meta": publicidad en Facebook, Instagram o Meta Ads
+- "cuota": cuota de autónomo, Seguridad Social, RETA
+- "herramienta": software o herramientas digitales (Klaviyo, Canva, dominios, Google, etc.)
+- "otro": cualquier cosa que no encaje claramente en las anteriores
+
+Elige la categoría que mejor encaje. Si no estás seguro, usa "otro".
+Si no encuentras algún dato, usa: proveedor "", fecha de hoy, total 0, tipo_iva "21", numero_factura "", categoria "otro".
 Responde SOLO el JSON, nada más.`;
 
     const anthropicResp = await fetch('https://api.anthropic.com/v1/messages', {
