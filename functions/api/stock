@@ -1,0 +1,121 @@
+// Cloudflare Pages Function — lee el STOCK REAL de Shopify en directo.
+// Desde 2026 Shopify ya no enseña el token shpat_ a mano: hay que pedirlo
+// usando el ID de cliente y el Secreto de la app (flujo "client credentials").
+// Esta función hace ese intercambio ella sola, en cada peticion.
+// Las dos claves viven en variables de entorno secretas de Cloudflare y
+// NUNCA se exponen al navegador.
+// Ruta publica: /api/stock
+
+export async function onRequestGet(context) {
+  const { env } = context;
+
+  const cors = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  const STORE = env.SHOPIFY_STORE || 'degalei.myshopify.com';
+  const CLIENT_ID = env.SHOPIFY_CLIENT_ID;
+  const CLIENT_SECRET = env.SHOPIFY_CLIENT_SECRET;
+
+  if (!CLIENT_ID || !CLIENT_SECRET) {
+    return new Response(JSON.stringify({ error: 'Faltan SHOPIFY_CLIENT_ID o SHOPIFY_CLIENT_SECRET en Cloudflare' }), {
+      status: 400, headers: { 'Content-Type': 'application/json', ...cors }
+    });
+  }
+
+  try {
+    // 1) Pedir un token de acceso a Shopify usando el ID de cliente + Secreto
+    const tokenResp = await fetch(`https://${STORE}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        grant_type: 'client_credentials'
+      })
+    });
+
+    if (!tokenResp.ok) {
+      const t = await tokenResp.text();
+      return new Response(JSON.stringify({ error: 'No se pudo obtener el token de Shopify', detail: t.substring(0, 300) }), {
+        status: 502, headers: { 'Content-Type': 'application/json', ...cors }
+      });
+    }
+
+    const tokenData = await tokenResp.json();
+    const TOKEN = tokenData.access_token;
+
+    if (!TOKEN) {
+      return new Response(JSON.stringify({ error: 'Shopify no devolvio un token valido', detail: tokenData }), {
+        status: 502, headers: { 'Content-Type': 'application/json', ...cors }
+      });
+    }
+
+    // 2) Usar ese token para leer el stock real (igual que antes)
+    const query = `{
+      products(first: 100, query: "status:active") {
+        edges {
+          node {
+            title
+            variants(first: 5) {
+              edges { node { sku title inventoryQuantity price } }
+            }
+          }
+        }
+      }
+    }`;
+
+    const resp = await fetch(`https://${STORE}/admin/api/2026-04/graphql.json`, {
+      method: 'POST',
+      headers: {
+        'X-Shopify-Access-Token': TOKEN,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query })
+    });
+
+    if (!resp.ok) {
+      const t = await resp.text();
+      return new Response(JSON.stringify({ error: 'Error de Shopify', detail: t.substring(0, 300) }), {
+        status: 502, headers: { 'Content-Type': 'application/json', ...cors }
+      });
+    }
+
+    const data = await resp.json();
+    const edges = (data && data.data && data.data.products && data.data.products.edges) || [];
+    const productos = [];
+    edges.forEach(e => {
+      const node = e.node;
+      const v = node.variants && node.variants.edges && node.variants.edges[0] && node.variants.edges[0].node;
+      if (!v) return;
+      productos.push({
+        name: node.title,
+        sku: v.sku || '',
+        color: (v.title && v.title !== 'Default Title') ? v.title : '—',
+        stock: (typeof v.inventoryQuantity === 'number') ? v.inventoryQuantity : 0,
+        precio: parseFloat(v.price) || 0
+      });
+    });
+
+    return new Response(JSON.stringify({ ok: true, productos }), {
+      status: 200, headers: { 'Content-Type': 'application/json', ...cors }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: 'Error del servidor', detail: String(err) }), {
+      status: 500, headers: { 'Content-Type': 'application/json', ...cors }
+    });
+  }
+}
+
+export async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    }
+  });
+}
