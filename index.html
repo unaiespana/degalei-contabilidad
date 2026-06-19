@@ -521,8 +521,8 @@ const CAT_ICONS = {
 
 // ─── SUPABASE CLIENT ──────────────────────────────────────
 const sb = {
-  async get(table, filters='') {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filters}&order=created_at.desc`, {
+  async get(table, filters='', order='created_at.desc') {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filters}&order=${order}`, {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
     return r.ok ? r.json() : [];
@@ -562,13 +562,34 @@ const sb = {
 
 // ─── STATE ────────────────────────────────────────────────
 let gastos = [];
-let pedidos = SHOPIFY_ORDERS;
+let pedidos = [];   // se rellena en vivo desde Supabase (tabla "pedidos")
 let curCat = 'otro';
 let editId = null;
 
 // ─── UTILS ────────────────────────────────────────────────
 const fmt = n => '€' + parseFloat(n).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2});
 const fmtDate = d => new Date(d).toLocaleDateString('es-ES', {day:'numeric', month:'short', year:'numeric'});
+
+// Convierte una fila de la tabla "pedidos" de Supabase al formato que usa la app
+function mapPedido(row) {
+  return {
+    id: row.id,
+    shopify_id: row.shopify_id,
+    num: row.numero || '',
+    cliente: row.cliente || 'Sin nombre',
+    prod: row.producto || '—',
+    fecha: row.fecha,
+    total: parseFloat(row.total) || 0,
+    estado_pago: row.estado_pago || '',
+    estado_envio: row.estado_envio || ''
+  };
+}
+// Etiqueta de estado de envío
+function envioTag(estado) {
+  return (estado === 'fulfilled' || estado === 'enviado')
+    ? '<span class="tag tag-green">Enviado</span>'
+    : '<span class="tag tag-amber">Pendiente</span>';
+}
 
 function toast(msg, dur=2500) {
   const t = document.getElementById('toast');
@@ -629,11 +650,13 @@ function renderKpis(T) {
 }
 
 function renderOrdersDash() {
-  document.getElementById('orders-dash').innerHTML = pedidos.slice(0,4).map(o => `
+  const el = document.getElementById('orders-dash');
+  if (!pedidos.length) { el.innerHTML = `<div class="empty">Aún no hay pedidos sincronizados desde Shopify.</div>`; return; }
+  el.innerHTML = pedidos.slice(0,6).map(o => `
   <div class="row">
     <span class="row-num">${o.num}</span>
     <div class="row-info"><div class="row-name">${o.cliente}</div><div class="row-sub">${o.prod} · ${fmtDate(o.fecha)}</div></div>
-    <div class="row-right"><div class="row-amount">${fmt(o.total)}</div><span class="tag tag-green">Enviado</span></div>
+    <div class="row-right"><div class="row-amount">${fmt(o.total)}</div>${envioTag(o.estado_envio)}</div>
   </div>`).join('');
 }
 
@@ -649,18 +672,22 @@ function renderResumen(T) {
 }
 
 function renderOrdersFull(T) {
+  if (!pedidos.length) {
+    document.getElementById('orders-full').innerHTML = `<div class="empty">Aún no hay pedidos sincronizados desde Shopify. Cuando entre un pedido nuevo aparecerá aquí solo.</div>`;
+    document.getElementById('ing-footer').innerHTML = '';
+    return;
+  }
   const rows = pedidos.map(o => {
     const base = o.total / 1.21, iva = o.total - base;
     const com = o.total * 0.021 + 0.30;
-    const envioTxt = o.envio > 0 ? `Producto ${fmt(o.producto)} + envío ${fmt(o.envio)}` : `Producto ${fmt(o.producto)} · envío gratis`;
     return `<div class="row">
     <span class="row-num">${o.num}</span>
-    <div class="row-info"><div class="row-name">${o.cliente}</div><div class="row-sub">${o.prod} · ${fmtDate(o.fecha)}</div><div class="row-sub" style="color:var(--mid)">${envioTxt}</div></div>
+    <div class="row-info"><div class="row-name">${o.cliente}</div><div class="row-sub">${o.prod} · ${fmtDate(o.fecha)}</div></div>
     <div class="row-right">
       <div class="row-amount">${fmt(o.total)}</div>
       <div class="row-det">Base: ${fmt(base)} · IVA: ${fmt(iva)}</div>
       <div class="row-det" style="color:var(--warning)">Com: −${fmt(com)}</div>
-      <span class="tag tag-green">Pagado</span>
+      ${envioTag(o.estado_envio)}
     </div></div>`;
   }).join('');
   document.getElementById('orders-full').innerHTML = rows;
@@ -902,7 +929,14 @@ async function sincronizarShopify() {
   const btn = document.getElementById('sync-btn');
   btn.classList.add('syncing');
   btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;margin:0"></div> Sincronizando...';
-  await new Promise(r => setTimeout(r, 1200));
+  try {
+    const [ped, gas] = await Promise.all([
+      sb.get('pedidos', '', 'fecha.desc'),
+      sb.get('gastos')
+    ]);
+    if (Array.isArray(ped)) pedidos = ped.map(mapPedido);
+    if (Array.isArray(gas)) gastos = gas;
+  } catch (e) { console.warn('Sync:', e); }
   btn.classList.remove('syncing');
   btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> Sincronizar`;
   toast('✓ Sincronizado con Shopify');
@@ -1040,8 +1074,13 @@ async function init() {
   } catch(e) {}
   renderAll();
   try {
-    const data = await sb.get('gastos');
-    if (Array.isArray(data) && data.length > 0) { gastos = data; renderAll(); }
+    const [ped, gas] = await Promise.all([
+      sb.get('pedidos', '', 'fecha.desc'),
+      sb.get('gastos')
+    ]);
+    if (Array.isArray(ped)) pedidos = ped.map(mapPedido);
+    if (Array.isArray(gas) && gas.length > 0) gastos = gas;
+    renderAll();
   } catch(e) { console.warn('Supabase:', e); }
 }
 
