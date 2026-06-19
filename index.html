@@ -563,6 +563,8 @@ const sb = {
 // ─── STATE ────────────────────────────────────────────────
 let gastos = [];
 let pedidos = [];   // se rellena en vivo desde Supabase (tabla "pedidos")
+let stockCojines = STOCK_COJINES;       // se rellena en vivo desde Shopify (/api/stock)
+let stockNeceseres = STOCK_NECESERES;   // se rellena en vivo desde Shopify (/api/stock)
 let curCat = 'otro';
 let editId = null;
 
@@ -774,9 +776,9 @@ function renderStock() {
     return `<span class="tag tag-green">${s} ud</span>`;
   };
   const row = p => `<div class="inv-row"><div><div class="inv-name">${p.name}</div><div class="inv-sku">${p.sku} · ${p.color}</div></div><div class="inv-right"><span class="inv-price">€${p.precio}</span>${stockTag(p.stock)}</div></div>`;
-  document.getElementById('stock-cojines').innerHTML = STOCK_COJINES.map(row).join('');
-  document.getElementById('stock-neceseres').innerHTML = STOCK_NECESERES.map(row).join('');
-  const todo = [...STOCK_COJINES, ...STOCK_NECESERES];
+  document.getElementById('stock-cojines').innerHTML = stockCojines.map(row).join('');
+  document.getElementById('stock-neceseres').innerHTML = stockNeceseres.map(row).join('');
+  const todo = [...stockCojines, ...stockNeceseres];
   const sinStock = todo.filter(p => p.stock === 0).length;
   const bajo = todo.filter(p => p.stock > 0 && p.stock <= 4).length;
   document.getElementById('stock-kpis').innerHTML = `
@@ -932,7 +934,8 @@ async function sincronizarShopify() {
   try {
     const [ped, gas] = await Promise.all([
       sb.get('pedidos', '', 'fecha.desc'),
-      sb.get('gastos')
+      sb.get('gastos'),
+      cargarStockShopify()
     ]);
     if (Array.isArray(ped)) pedidos = ped.map(mapPedido);
     if (Array.isArray(gas)) gastos = gas;
@@ -941,6 +944,26 @@ async function sincronizarShopify() {
   btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> Sincronizar`;
   toast('✓ Sincronizado con Shopify');
   renderAll();
+}
+
+// ─── STOCK SHOPIFY EN VIVO ────────────────────────────────
+async function cargarStockShopify() {
+  try {
+    const resp = await fetch('/api/stock');
+    const json = await resp.json();
+    if (json && json.ok && Array.isArray(json.productos) && json.productos.length) {
+      const coj = [], nec = [];
+      json.productos.forEach(p => {
+        const item = { name: p.name, sku: p.sku, color: p.color || '—', stock: p.stock, precio: p.precio };
+        if ((p.sku || '').toUpperCase().startsWith('NEC')) nec.push(item);
+        else coj.push(item);
+      });
+      if (coj.length) stockCojines = coj;
+      if (nec.length) stockNeceseres = nec;
+      return true;
+    }
+  } catch (e) { console.warn('Stock Shopify:', e); }
+  return false;
 }
 
 // ─── ESCANEAR FACTURA ─────────────────────────────────────
@@ -1076,7 +1099,8 @@ async function init() {
   try {
     const [ped, gas] = await Promise.all([
       sb.get('pedidos', '', 'fecha.desc'),
-      sb.get('gastos')
+      sb.get('gastos'),
+      cargarStockShopify()
     ]);
     if (Array.isArray(ped)) pedidos = ped.map(mapPedido);
     if (Array.isArray(gas) && gas.length > 0) gastos = gas;
