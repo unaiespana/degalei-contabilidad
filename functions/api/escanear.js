@@ -26,7 +26,7 @@ export async function onRequestPost(context) {
   "proveedor": "nombre de la empresa que emite la factura",
   "fecha": "fecha en formato YYYY-MM-DD",
   "total": número total con IVA incluido (solo el número, punto decimal),
-  "tipo_iva": "21", "10", "4" o "0" según el IVA aplicado,
+  "tipo_iva": "21", "10", "4", "0" o "isp" (usa "isp" si es una factura intracomunitaria sin IVA de empresas como Shopify, Meta/Facebook, Google, Canva, Klaviyo, etc., sujetas a inversión del sujeto pasivo),
   "numero_factura": "número de la factura si aparece, si no cadena vacía",
   "categoria": una de estas claves según lo que sea la factura
 }
